@@ -7,7 +7,7 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc,getDocs, setDoc,deleteDoc } from 'firebase/firestore';
 import 'dotenv/config';
 
 // Your web app's Firebase configuration
@@ -70,8 +70,8 @@ app.post('/signup', async (req, res) => {
         await setDoc(doc(usuarios, usuario), req.body);
 
         res.json({
-            'alert': 'success',
-            'registered': req.body
+            'alert': 'success'
+            //'registered': req.body
         });
     } catch (error) {
         console.error(error);
@@ -120,6 +120,65 @@ app.post('/login', async (req, res) => {
         });
     }
 });
+
+app.get('/get-all', async (req, res) => {
+    const usuarios = collection(db, 'usuarios');
+    const docsUsuarios = await getDocs(usuarios);
+    const arrUsuarios = [];
+
+    docsUsuarios.forEach((usuario) => {
+        const obj = {
+            nombre: usuario.data().nombre,
+            apaterno: usuario.data().apaterno,
+            amaterno: usuario.data().amaterno,
+            usuario: usuario.data().usuario,
+            telefono: usuario.data().telefono
+        };
+        arrUsuarios.push(obj);
+    });
+
+    if (arrUsuarios.length > 0) {
+        res.json({
+            'alerta': 'Success',
+            'data': arrUsuarios
+        });
+    } else {
+        res.json({
+            'alerta': 'Success',
+            'message': 'No hay usuarios en la base de datos'
+        });
+    }
+});
+
+
+app.post('/delete-user', async (req, res) => {
+    const { usuario } = req.body;
+
+    try {
+        const usuarios = collection(db, 'usuarios');
+        const userDoc = doc(usuarios, usuario);
+        const user = await getDoc(userDoc);
+
+        if (!user.exists()) {
+            return res.json({
+                'alerta': 'El usuario no existe en la base de datos'
+            });
+        }
+
+        await deleteDoc(userDoc);
+
+        res.json({
+            'message': 'Usuario eliminado correctamente'
+        });
+    } catch (error) {
+        console.error(error);
+        res.json({
+            'alerta': 'Fallo',
+            'mesage': err
+        });
+    }
+});
+
 
 const port = process.env.PORT || 6000;
 
